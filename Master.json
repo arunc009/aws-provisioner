@@ -1,0 +1,100 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Master Template for cross region replication",
+
+  "Mappings" : {
+
+    "RegionToUrl" : {
+
+      "Urls" : {
+
+        "UrlForVPC" : "https://s3.amazonaws.com/cloudformation/VPC.json", 
+        "UrlForInstance" : "https://s3.amazonaws.com/cloudformation/Instance.json",
+        "UrlForElb" : "https://s3.amazonaws.com/cloudformation/ELB.json",
+        "UrlForAutoScaling" : "https://s3.amazonaws.com/cloudformation/AutoScaling.json",
+        "UrlForElasticCacheRedis" : "https://s3.amazonaws.com/cloudformation/ElasticCacheRedis.json" 
+
+      }
+   
+    }
+
+  },
+
+  "Resources" : {
+
+    "VPC" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties" : {
+        "TemplateURL" : { "Fn::FindInMap" : [ "RegionToUrl", "Urls", "UrlForVPC" ]}
+      }
+    },
+
+    "Instance" : {
+      "DependsOn" : "VPC",
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties" : {
+        "TemplateURL" : { "Fn::FindInMap" : [ "RegionToUrl", "Urls", "UrlForInstance" ]},
+        "Parameters" : {
+          "RegionalSecurityGroupId" : { "Fn::GetAtt" : [ "VPC", "Outputs.RegionalSecurityGroupId"] },
+          "PrivateInstanceSecurityGroupId" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateInstanceSecurityGroupId"] },
+          "PrivateSubnet1Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet1Id"] },
+          "PrivateSubnet2Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet2Id"] },
+          "PrivateSubnet3Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet3Id"] }
+        }
+      }
+    },
+
+    "Elb" : {
+      "DependsOn" : [ "VPC", "Instance" ],
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties" : {
+        "TemplateURL" : { "Fn::FindInMap" : [ "RegionToUrl", "Urls", "UrlForElb" ]},
+        "Parameters" : {
+          "VPCId" : { "Fn::GetAtt" : [ "VPC", "Outputs.VPCId"] },
+          "PublicSubnet1Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnet1Id"] },
+          "PublicSubnet2Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnet2Id"] },
+          "sampleInstance1Id" : { "Fn::GetAtt" : [ "Instance", "Outputs.sampleInstance1Id"] },
+          "sampleInstance2Id" : { "Fn::GetAtt" : [ "Instance", "Outputs.sampleInstance2Id"] },
+        }
+      }
+    },
+
+    "AutoScaling" : {
+      "DependsOn" : [ "VPC", "Instance", "Elb" ],
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties" : {
+        "TemplateURL" : { "Fn::FindInMap" : [ "RegionToUrl", "Urls", "UrlForAutoScaling" ]},
+        "Parameters" : {
+          "RegionalSecurityGroupId" : { "Fn::GetAtt" : [ "VPC", "Outputs.RegionalSecurityGroupId"] },
+          "PrivateInstanceSecurityGroupId" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateInstanceSecurityGroupId"] },
+          "PrivateSubnet1Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet1Id"] },
+          "PrivateSubnet2Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet2Id"] },
+          "PrivateSubnet3Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet3Id"] },
+          "TargetGroupId" : { "Fn::GetAtt" : [ "Elb", "Outputs.TargetGroupId"] },
+          "InstanceProfileId" : { "Fn::GetAtt" : [ "Instance", "Outputs.InstanceProfileId"] }                   
+        }
+      }
+    },
+
+    "ElasticCacheRedis" : {
+      "DependsOn" : "VPC",
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties" : {
+        "TemplateURL" : { "Fn::FindInMap" : [ "RegionToUrl", "Urls", "UrlForElasticCacheRedis" ]},
+        "Parameters" : {
+          "VPCId" : { "Fn::GetAtt" : [ "VPC", "Outputs.VPCId"] },
+          "PrivateInstanceSecurityGroupId" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateInstanceSecurityGroupId"] },
+          "PrivateSubnet1Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet1Id"] },
+          "PrivateSubnet2Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet2Id"] },
+          "PrivateSubnet3Id" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnet3Id"] },
+        }
+      }
+    },    
+
+
+
+
+  },
+}
+

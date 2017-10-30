@@ -1,0 +1,131 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Application LoadBalancer Template",
+
+  "Parameters" : {
+
+    "VPCId" : {
+      "Description" : "Name of the VPC-Id",
+      "Type" : "String"      
+    },
+
+    "PublicSubnet1Id" : {
+      "Description" : "Name of the PublicSubnet-1 Id",
+      "Type" : "String"
+    },
+
+    "PublicSubnet2Id" : {
+      "Description" : "Name of the PublicSubnet-2 Id",
+      "Type" : "String"
+    },
+
+    "sampleInstance1Id" : {
+      "Description" : "Name of the sampleInstance-1 Id",
+      "Type" : "String"
+    },
+
+    "sampleInstance2Id" : {
+      "Description" : "Name of the sampleInstance-2 Id",
+      "Type" : "String"
+    },
+
+  },
+
+
+  "Mappings" : {
+
+  },
+
+
+  "Resources" : {
+
+    "LoadBalancerSecurityGroup" : {
+     "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+          "GroupDescription" : "Allow http to client host",
+          "VpcId" : { "Ref" : "VPCId" },
+          "SecurityGroupIngress" : [{
+                "IpProtocol" : "tcp",
+                "FromPort" : "80",
+                "ToPort" : "80",
+                "CidrIp" : "0.0.0.0/0"
+           }],
+          "SecurityGroupEgress" : [{
+            "IpProtocol" : "tcp",
+            "FromPort" : "80",
+            "ToPort" : "80",
+            "CidrIp" : "0.0.0.0/0"
+          }],
+          "Tags" : [ {"Key" : "Name", "Value" : "sample-loadBalancerSecurityGroup" }, {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} } ]
+      }
+    },
+
+    "LoadBalancer" : {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme" : "internet-facing",
+        "Subnets" : [ {"Ref": "PublicSubnet1Id"}, {"Ref" : "PublicSubnet2Id"} ],
+        "LoadBalancerAttributes" : [
+          { "Key" : "idle_timeout.timeout_seconds", "Value" : "50" }
+        ],
+        "SecurityGroups": [{"Ref": "LoadBalancerSecurityGroup"}],
+        "Tags" : [
+          { "Key" : "Application", "Value" : "AWS::StackName" },
+          { "Key" : "Name", "Value" : "sample-applicationLoadBalancer" }
+        ]
+      }
+    },
+
+
+    "TargetGroup" : {
+      "DependsOn" : "LoadBalancer",
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties" : {
+        "HealthCheckIntervalSeconds": 30,
+        "HealthCheckPath" : "/index.html",
+        "HealthCheckPort" : "8000",
+        "HealthCheckProtocol": "HTTPS",
+        "HealthCheckTimeoutSeconds": 10,
+        "HealthyThresholdCount": 4,
+        "Matcher" : {
+          "HttpCode" : "200"
+        },
+        "Name": "Targets",
+        "Port": 8000,
+        "Protocol": "HTTPS",
+        "TargetGroupAttributes": [{
+          "Key": "deregistration_delay.timeout_seconds",
+          "Value": "20"
+        }],
+        "Targets": [
+          { "Id": {"Ref" : "sampleInstance1Id"}, "Port": 8000 },
+          { "Id": {"Ref" : "sampleInstance2Id"}, "Port": 8000 }
+        ],
+        "UnhealthyThresholdCount": 3,
+        "VpcId": { "Ref" : "VPCId" },
+        "Tags" : [
+          { "Key" : "Application", "Value" : "AWS::StackName" },
+          { "Key" : "Name", "Value" : "sample-targetGroup-1" }
+        ]
+      }
+    }
+
+  },
+
+  
+  "Outputs" : {
+
+    "LoadBalancerId" : {
+      "Description" : "LoadBalancer-ID",
+      "Value" :  { "Ref" : "LoadBalancer" }
+    },
+
+    "TargetGroupId" : {
+      "Description" : "TargetGroup-ID",
+      "Value" :  { "Ref" : "TargetGroup" }
+    }
+  
+  }
+
+}

@@ -1,0 +1,148 @@
+{
+   "AWSTemplateFormatVersion" : "2010-09-09",
+
+   "Description" : "Elastic Cache Redis Template",
+
+   "Parameters" : {
+
+      "PrivateInstanceSecurityGroupId" : {
+         "Description" : "Name of the PrivateInstanceSecurityGroup-Id ",
+         "Type" : "String"
+      },
+
+
+      "PrivateSubnet1Id" : {
+         "Description" : "Name of the PrivateSubnet-1 Id ",
+         "Type" : "String"
+      },
+
+      "PrivateSubnet2Id" : {
+         "Description" : "Name of the PrivateSubnet-2 Id",
+         "Type" : "String"
+      },
+
+      "PrivateSubnet3Id" : {
+         "Description" : "Name of the PrivateSubnet-3 Id",
+         "Type" : "String"
+      },
+
+      "VPCId" : {
+         "Description" : "Name of the VPC-Id",
+         "Type" : "String"
+      }      
+
+
+   },
+
+   "Mappings" : {
+
+   },
+
+   "Resources" : {
+
+      "SubnetGroup" : {
+         "Type" : "AWS::ElastiCache::SubnetGroup",
+         "Properties" : {
+         "Description" : "Cache Subnet Group",
+         "SubnetIds" : [ { "Ref" : "PrivateSubnet1Id" }, { "Ref" : "PrivateSubnet2Id" }, { "Ref" : "PrivateSubnet3Id" } ]
+         }
+      },
+
+      "CacheSecurityGroup" : {
+         "Type" : "AWS::EC2::SecurityGroup",
+         "Properties" : {
+           "GroupDescription" : "Allow access to the cache from the Web Server",
+            "VpcId" : { "Ref" : "VPCId" },
+            "Tags" : [ {"Key" : "Name", "Value" : "sample-elasticCacheSecurityGroup" }, {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} } ],
+            "SecurityGroupIngress" : [
+               {"IpProtocol" : "tcp", "FromPort" : "6379", "ToPort" : "6379", "SourceSecurityGroupId" : { "Ref" : "PrivateInstanceSecurityGroupId"} }
+            ]
+         }      
+      },       
+
+      "CacheCluster" : {
+         "DependsOn" : [ "SubnetGroup", "CacheSecurityGroup" ],
+         "Type" : "AWS::ElastiCache::ReplicationGroup",
+         "Properties" : {
+            "AutomaticFailoverEnabled" : true,
+            "AutoMinorVersionUpgrade" : true,
+            "CacheNodeType" : "cache.t2.micro",
+            "CacheSubnetGroupName" : { "Ref" : "SubnetGroup" },
+            "Engine" : "redis",
+            "EngineVersion" : "3.2.4",
+            "NumNodeGroups" : "2",
+            "ReplicasPerNodeGroup" : "2",
+            "Port" : 6379,
+            "PreferredMaintenanceWindow" : "sun:05:00-sun:09:00",
+            "ReplicationGroupDescription" : "A sample replication group",
+            "SecurityGroupIds" : [ { "Ref" : "PrivateInstanceSecurityGroupId"} ],
+            "SnapshotRetentionLimit" : 5,
+            "SnapshotWindow" : "10:00-12:00",
+            "Tags" : [
+               { "Key" : "Application", "Value" : "AWS::StackName" },
+               {"Key" : "Name", "Value" : "sample-redisCacheCluster" },
+            ]
+         }
+      },
+
+      "S3Bucket" : {
+         "Type" : "AWS::S3::Bucket",
+         "Properties" : {
+            "BucketName" : "sampleBucket",
+            "AccessControl" : "Private",
+            "Tags" : [ 
+               { 
+               "Key" : "Application",
+               "Value" : "AWS::StackName"
+               }
+            ],
+         }
+      },
+
+      "SQSQueue" : {
+         "Type" : "AWS::SQS::Queue",
+         "Properties" : {
+            "QueueName" : "sampleQueue",
+            "DelaySeconds": "0",
+            "MaximumMessageSize": "262144",
+            "MessageRetentionPeriod": "345600",
+            "ReceiveMessageWaitTimeSeconds": "0",
+            "VisibilityTimeout": "30"
+         }
+      },      
+
+
+
+   
+   },
+
+   "Outputs" : {
+
+      "SubnetGroupId" : {
+         "Description" : "SubnetGroup-ID",
+         "Value" :  { "Ref" : "SubnetGroup" }
+      },
+
+      "CacheSecurityGroupId" : {
+         "Description" : "CacheSecurityGroup-ID",
+         "Value" :  { "Ref" : "CacheSecurityGroup" }
+      },
+
+      "CacheClusterId" : {
+         "Description" : "CacheCluster-ID",
+         "Value" :  { "Ref" : "CacheCluster" }
+      },
+
+      "S3BucketId" : {
+         "Description" : "S3Bucket-ID",
+         "Value" :  { "Ref" : "S3Bucket" }
+      },
+
+      "SQSQueueId" : {
+         "Description" : "SQSQueue-ID",
+         "Value" :  { "Ref" : "SQSQueue" }
+      },
+
+   
+   }
+}

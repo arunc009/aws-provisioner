@@ -1,0 +1,246 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "AutoScaling Template",
+
+  "Parameters" : {
+
+    "InstanceProfileId" : {
+      "Description" : "Name of the Instance Profile Id",
+      "Type" : "String"
+    },    
+
+    "PrivateInstanceSecurityGroupId" : {
+      "Description" : "Name of the Private Instane Security Group Id",
+      "Type" : "String"
+    },
+
+    "RegionalSecurityGroupId" : {
+      "Description" : "Name of the Regional Security Group Id",
+      "Type" : "String"
+    },    
+
+    "PrivateSubnet1Id" : {
+      "Description" : "Name of the PrivateSubnet-1 Id ",
+      "Type" : "String"
+    },
+
+    "PrivateSubnet2Id" : {
+      "Description" : "Name of the PrivateSubnet-2 Id",
+      "Type" : "String"
+    },
+
+    "PrivateSubnet3Id" : {
+      "Description" : "Name of the PrivateSubnet-3 Id",
+      "Type" : "String"
+    },    
+
+    "TargetGroupId" : {
+      "Description" : "Name of the TargetGroup-Id",
+      "Type" : "String"
+    }    
+
+  },
+
+
+  "Mappings" : {
+
+    "RegionToKey": {
+
+      "us-east-1" : { "KeyName" : "sample-key-useast1" },
+      "us-east-2" : { "KeyName" : "sample-key-useast2" },
+      "us-west-1" : { "KeyName" : "sample-key-uswest1" },
+      "us-west-2" : { "KeyName" : "sample-key-uswest2" },
+      "ca-central-1" : { "KeyName" : "sample-key-cacentral1" },
+      "eu-west-1" : { "KeyName" : "sample-key-euwest1" },
+      "eu-central-1" : { "KeyName" : "sample-key-eucentral1" },
+      "eu-west-2" : { "KeyName" : "sample-key-euwest2" },
+      "ap-northeast-1" : { "KeyName" : "sample-key-apnortheast1" },
+      "ap-northeast-2" : { "KeyName" : "sample-key-apnortheast2" },
+      "ap-southeast-1" : { "KeyName" : "sample-key-apsoutheast1" },
+      "ap-southeast-2" : { "KeyName" : "sample-key-apsoutheast2" },
+      "ap-south-1" : { "KeyName" : "sample-key-apsouth1" },
+      "sa-east-1" : { "KeyName" : "sample-key-saeast1" },
+
+    },
+
+    "RegionToAMI" : {
+    
+      "us-east-1" : { "AMI" : "ami-aaaabbbb" },
+      "us-east-2" : { "AMI" : "ami-aaaabbbb" },
+      "us-west-1" : { "AMI" : "ami-aaaabbbb" },
+      "us-west-2" : { "AMI" : "ami-aaaabbbb" },
+      "ca-central-1" : { "AMI" : "ami-aaaabbbb" },
+      "eu-west-1" : { "AMI" : "ami-aaaabbbb" },
+      "eu-central-1" : { "AMI" : "ami-aaaabbbb" },
+      "eu-west-2" : { "AMI" : "ami-aaaabbbb" },
+      "ap-northeast-1" : { "AMI" : "ami-aaaabbbb" },
+      "ap-northeast-2" : { "AMI" : "ami-aaaabbbb" },
+      "ap-southeast-1" : { "AMI" : "ami-aaaabbbb" },
+      "ap-southeast-2" : { "AMI" : "ami-aaaabbbb" },
+      "ap-south-1" : { "AMI" : "ami-aaaabbbb" },
+      "sa-east-1" : { "AMI" : "ami-aaaabbbb" },
+
+
+    },
+
+    "RegionToInstanceType" : {
+
+      "us-east-1" : { "InstanceType" : "t2.micro" },
+      "us-east-2" : { "InstanceType" : "t2.micro" },
+      "us-west-1" : { "InstanceType" : "t2.micro" },
+      "us-west-2" : { "InstanceType" : "t2.micro" },
+      "ca-central-1" : { "InstanceType" : "t2.micro" },
+      "eu-west-1" : { "InstanceType" : "t2.micro" },
+      "eu-central-1" : { "InstanceType" : "t2.micro" },
+      "eu-west-2" : { "InstanceType" : "t2.micro" },
+      "ap-northeast-1" : { "InstanceType" : "t2.micro" },
+      "ap-northeast-2" : { "InstanceType" : "t2.micro" },
+      "ap-southeast-1" : { "InstanceType" : "t2.micro" },
+      "ap-southeast-2" : { "InstanceType" : "t2.micro" },
+      "ap-south-1" : { "InstanceType" : "t2.micro" },
+      "sa-east-1" : { "InstanceType" : "t2.micro" },
+
+    }
+
+  },
+
+
+  "Resources" : {
+
+    "LaunchConfiguration" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+          "AssociatePublicIpAddress": "false",
+          "KeyName" : { "Fn::FindInMap" : [ "RegionToKey", { "Ref" : "AWS::Region"}, "KeyName" ]},
+          "ImageId" : { "Fn::FindInMap" : [ "RegionToAMI", { "Ref" : "AWS::Region"}, "AMI" ]},
+          "IamInstanceProfile" : { "Ref" : "InstanceProfileId" },
+          "SecurityGroups" : [{ "Ref" : "PrivateInstanceSecurityGroupId" }, { "Ref" : "RegionalSecurityGroupId" }],
+          "InstanceType" : { "Fn::FindInMap" : [ "RegionToInstanceType", { "Ref" : "AWS::Region" }, "InstanceType"]}
+      }
+    }, 
+
+    "AutoScalingGroup" : {
+      "DependsOn" : "LaunchConfiguration",
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+          "Cooldown" : "300",
+          "VPCZoneIdentifier" : [ { "Ref" : "PrivateSubnet1Id" }, {  "Ref" : "PrivateSubnet2Id" }, { "Ref" : "PrivateSubnet3Id" } ],
+          "LaunchConfigurationName" : { "Ref" : "LaunchConfiguration" },
+          "MinSize" : "1",
+          "MaxSize" : "1",
+          "DesiredCapacity" : "1",
+          "TargetGroupARNs" : [ { "Ref" : "TargetGroupId" } ],
+          "MetricsCollection": [
+            {
+                "Granularity": "1Minute",
+                "Metrics": [
+                  "GroupMinSize",
+                  "GroupMaxSize"
+                ]
+            }
+          ],
+          "Tags" : [ 
+            {
+               "Key" : "Name",
+               "Value" : "sample-autoScalingGroup",
+               "PropagateAtLaunch" : "true"
+            }, 
+            {
+               "Key" : "Role",
+               "Value" : "sample",
+               "PropagateAtLaunch" : "true"
+            }, 
+            {
+               "Key" : "Application",
+               "Value" : "AWS::StackName",
+               "PropagateAtLaunch" : "true"
+            } ]
+      }
+    },
+
+    "AutoScalingGroupScaleUpPolicy" : {
+      "DependsOn" : "AutoScalingGroup",
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
+        "Cooldown" : "60",
+        "ScalingAdjustment" : "1"
+      }
+    },
+    
+    "AutoScalingGroupScaleDownPolicy" : {
+      "DependsOn" : "AutoScalingGroup",
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
+        "Cooldown" : "60",
+        "ScalingAdjustment" : "-1"
+      }
+    },
+
+    "CPUAlarmHigh": {
+      "DependsOn" : "AutoScalingGroupScaleUpPolicy",
+     "Type": "AWS::CloudWatch::Alarm",
+     "Properties": {
+        "AlarmDescription": "Scale-up if CPU > 90% for 10 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "2",
+        "Threshold": "90",
+        "AlarmActions": [ { "Ref": "AutoScalingGroupScaleUpPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "AutoScalingGroup" }
+          }
+        ],
+        "ComparisonOperator": "GreaterThanThreshold"
+      }
+    },
+
+    "CPUAlarmLow": {
+      "DependsOn" : "AutoScalingGroupScaleDownPolicy",
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Scale-down if CPU < 40% for 10 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "2",
+        "Threshold": "70",
+        "AlarmActions": [ { "Ref": "AutoScalingGroupScaleDownPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "AutoScalingGroup" }
+          }
+        ],
+        "ComparisonOperator": "LessThanThreshold"
+      }
+    },
+
+  },    
+
+
+
+
+  "Outputs" : {
+
+    "LaunchConfigId" : {
+      "Description" : "LaunchConfig-ID",
+      "Value" :  { "Ref" : "LaunchConfiguration" }
+    },    
+    
+    "AutoScalingGroupId" : {
+      "Description" : "AutoScalingGroup-ID",
+      "Value" :  { "Ref" : "AutoScalingGroup" }
+    },    
+  }
+
+}

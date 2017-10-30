@@ -1,0 +1,252 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Instance Template",
+
+  "Parameters" : {
+
+    "PrivateInstanceSecurityGroupId" : {
+      "Description" : "Name of the Private Instane Security Group Id",
+      "Type" : "String"
+    },
+
+    "RegionalSecurityGroupId" : {
+      "Description" : "Name of the Regional Security Group Id",
+      "Type" : "String"
+    },
+
+    "PrivateSubnet1Id" : {
+      "Description" : "Name of the PrivateSubnet-1 Id ",
+      "Type" : "String"
+    },
+
+    "PrivateSubnet2Id" : {
+      "Description" : "Name of the PrivateSubnet-2 Id",
+      "Type" : "String"
+    },
+
+    "PrivateSubnet3Id" : {
+      "Description" : "Name of the PrivateSubnet-3 Id",
+      "Type" : "String"
+    },
+  },
+
+
+  "Mappings" : {
+
+    "RegionToAMI" : {
+
+      "us-east-1" : { "AMI" : "ami-aaabbbbb" },
+      "us-east-2" : { "AMI" : "ami-aaabbbbb" },
+      "us-west-1" : { "AMI" : "ami-aaabbbbb" },
+      "us-west-2" : { "AMI" : "ami-aaabbbbb" },
+      "ca-central-1" : { "AMI" : "ami-aaabbbbb" },
+      "eu-west-1" : { "AMI" : "ami-aaabbbbb" },
+      "eu-central-1" : { "AMI" : "ami-aaabbbbb" },
+      "eu-west-2" : { "AMI" : "ami-aaabbbbb" },
+      "ap-northeast-1" : { "AMI" : "ami-aaabbbbb" },
+      "ap-northeast-2" : { "AMI" : "ami-aaabbbbb" },
+      "ap-southeast-1" : { "AMI" : "ami-aaabbbbb" },
+      "ap-southeast-2" : { "AMI" : "ami-aaabbbbb" },
+      "ap-south-1" : { "AMI" : "ami-aaabbbbb" },
+      "sa-east-1" : { "AMI" : "ami-aaabbbbb" },
+
+    },
+
+    "RegionToKey": {
+
+      "us-east-1" : { "KeyName" : "sample-key-useast1" },
+      "us-east-2" : { "KeyName" : "sample-key-useast2" },
+      "us-west-1" : { "KeyName" : "sample-key-uswest1" },
+      "us-west-2" : { "KeyName" : "sample-key-uswest2" },
+      "ca-central-1" : { "KeyName" : "sample-key-cacentral1" },
+      "eu-west-1" : { "KeyName" : "sample-key-euwest1" },
+      "eu-central-1" : { "KeyName" : "sample-key-eucentral1" },
+      "eu-west-2" : { "KeyName" : "sample-key-euwest2" },
+      "ap-northeast-1" : { "KeyName" : "sample-key-apnortheast1" },
+      "ap-northeast-2" : { "KeyName" : "sample-key-apnortheast2" },
+      "ap-southeast-1" : { "KeyName" : "sample-key-apsoutheast1" },
+      "ap-southeast-2" : { "KeyName" : "sample-key-apsoutheast2" },
+      "ap-south-1" : { "KeyName" : "sample-key-apsouth1" },
+      "sa-east-1" : { "KeyName" : "sample-key-saeast1" },
+    },
+
+    "RegionToInstanceType" : {
+
+      "us-east-1" : { "InstanceType" : "t2.micro" },
+      "us-east-2" : { "InstanceType" : "t2.micro" },
+      "us-west-1" : { "InstanceType" : "t2.micro" },
+      "us-west-2" : { "InstanceType" : "t2.micro" },
+      "ca-central-1" : { "InstanceType" : "t2.micro" },
+      "eu-west-1" : { "InstanceType" : "t2.micro" },
+      "eu-central-1" : { "InstanceType" : "t2.micro" },
+      "eu-west-2" : { "InstanceType" : "t2.micro" },
+      "ap-northeast-1" : { "InstanceType" : "t2.micro" },
+      "ap-northeast-2" : { "InstanceType" : "t2.micro" },
+      "ap-southeast-1" : { "InstanceType" : "t2.micro" },
+      "ap-southeast-2" : { "InstanceType" : "t2.micro" },
+      "ap-south-1" : { "InstanceType" : "t2.micro" },
+      "sa-east-1" : { "InstanceType" : "t2.micro" },
+    },
+
+  },
+
+
+  "Resources" : {
+
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ec2.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "ApplicationPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "elastiCache:*",
+                    "ec2:*",
+                    "cloudwatch:*",
+                    "dynamodb:*",
+                    "s3:*",
+                    "sqs:*",
+                    "cloudformation:*",
+                    "rds:*",
+                    "iam:AddRoleToInstanceProfile",
+                    "iam:CreateInstanceProfile",
+                    "iam:CreateRole",
+                    "iam:PassRole",
+                    "iam:ListInstanceProfiles"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+
+    "InstanceProfile": {
+       "Type": "AWS::IAM::InstanceProfile",
+       "Properties": {
+          "Path": "/",
+          "Roles": [ { "Ref": "InstanceRole" } ]
+       }
+    },    
+
+    "sampleInstance1" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "RegionToAMI", { "Ref" : "AWS::Region"}, "AMI" ]},
+        "KeyName" : { "Fn::FindInMap" : [ "RegionToKey", { "Ref" : "AWS::Region"}, "KeyName" ]},
+        "IamInstanceProfile" : { "Ref" : "InstanceProfile" },
+        "SecurityGroupIds" : [{ "Ref" : "PrivateInstanceSecurityGroupId" }, { "Ref" : "RegionalSecurityGroupId" }],
+        "SubnetId" : { "Ref" : "PrivateSubnet1Id" },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToInstanceType", { "Ref" : "AWS::Region" }, "InstanceType"]},
+        "Tags" : [
+          { "Key" : "Application", "Value" : "AWS::StackName" },
+          {"Key" : "Name", "Value" : "sampleInstance-1" },
+          {"Key" : "Role", "Value" : "sampleInstance" },
+        ]
+      }
+    },
+
+    "sampleInstance2" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "RegionToAMI", { "Ref" : "AWS::Region"}, "AMI" ]},
+        "KeyName" : { "Fn::FindInMap" : [ "RegionToKey", { "Ref" : "AWS::Region"}, "KeyName" ]},
+        "IamInstanceProfile" : { "Ref" : "InstanceProfile" },
+        "SecurityGroupIds" : [{ "Ref" : "PrivateInstanceSecurityGroupId" }, { "Ref" : "RegionalSecurityGroupId" }],
+        "SubnetId" : { "Ref" : "PrivateSubnet1Id" },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToInstanceType", { "Ref" : "AWS::Region" }, "InstanceType"]},
+        "Tags" : [
+          { "Key" : "Application", "Value" : "AWS::StackName" },
+          {"Key" : "Name", "Value" : "sampleInstance-2" },
+          {"Key" : "Role", "Value" : "sampleInstance" },
+        ]
+      }
+    },
+
+
+    "CustomInstance1" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "RegionToAMI", { "Ref" : "AWS::Region"}, "AMI" ]},
+        "KeyName" : { "Fn::FindInMap" : [ "RegionToKey", { "Ref" : "AWS::Region"}, "KeyName" ]},
+        "IamInstanceProfile" : { "Ref" : "InstanceProfile" },
+        "SecurityGroupIds" : [{ "Ref" : "PrivateInstanceSecurityGroupId" }, { "Ref" : "RegionalSecurityGroupId" }],
+        "SubnetId" : { "Ref" : "PrivateSubnet2Id" },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToInstanceType", { "Ref" : "AWS::Region" }, "InstanceType"]},
+        "Tags" : [
+          { "Key" : "Application", "Value" : "AWS::StackName" },
+          {"Key" : "Name", "Value" : "CustomInstance-1" },
+          {"Key" : "Role", "Value" : "CustomInstance" },
+        ]
+      }
+    },
+
+    "CustomInstance2" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "RegionToAMI", { "Ref" : "AWS::Region"}, "AMI" ]},
+        "KeyName" : { "Fn::FindInMap" : [ "RegionToKey", { "Ref" : "AWS::Region"}, "KeyName" ]},
+        "IamInstanceProfile" : { "Ref" : "InstanceProfile" },
+        "SecurityGroupIds" : [{ "Ref" : "PrivateInstanceSecurityGroupId" }, { "Ref" : "RegionalSecurityGroupId" }],
+        "SubnetId" : { "Ref" : "PrivateSubnet3Id" },
+        "InstanceType" : { "Fn::FindInMap" : [ "RegionToInstanceType", { "Ref" : "AWS::Region" }, "InstanceType"]},
+        "Tags" : [
+          { "Key" : "Application", "Value" : "AWS::StackName" },
+          {"Key" : "Name", "Value" : "CustomInstance-1" },
+          {"Key" : "Role", "Value" : "CustomInstance" },
+        ]
+      }
+    },
+  },
+
+  "Outputs" : {
+
+    "InstanceProfileId" : {
+      "Description" : "InstanceProfile-Id",
+      "Value" :  { "Ref" : "InstanceProfile" }
+    },
+    
+    "sampleInstance1Id" : {
+      "Description" : "sampleInstanceInstance1-Id",
+      "Value" :  { "Ref" : "sampleInstance1" }
+    },
+
+    "sampleInstance2Id" : {
+      "Description" : "sampleInstanceInstance2-Id",
+      "Value" :  { "Ref" : "sampleInstance2" }
+    },
+
+    "CustomInstance1Id" : {
+      "Description" : "CustomInstance1-Id",
+      "Value" :  { "Ref" : "CustomInstance1" }
+    },
+
+    "CustomInstance2Id" : {
+      "Description" : "CustomInstance2-Id",
+      "Value" :  { "Ref" : "CustomInstance2" }
+    },
+
+  }
+
+}
